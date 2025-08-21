@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureKim's OTP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+        }
+        .container {
+            background-color: white;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        h1 a {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        h1 a:hover {
+            color: #0056b3;
+        }
+        .info-text {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            word-break: keep-all;
+        }
+        input[type="text"] {
+            padding: 0.5em;
+            font-size: 1em;
+            margin-bottom: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 1em);
+            box-sizing: border-box;
+        }
+        button {
+            padding: 0.7em 1.5em;
+            font-size: 1em;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #otpOutput {
+            margin-top: 1.5em;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            word-break: break-all;
+            display: none;
+        }
+        .messageBox {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(100%);
+            z-index: 1000;
+        }
+        .messageBox.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="https://blog.securekim.com" target="_blank">SecureKim</a>'s OTP</h1>
+        <p class="info-text">
+            삼성 폰 키패드에 *#9900*을 입력하고, OTP를 입력해 패킷 캡쳐 같은 비밀 기능을 사용하세요!<br><br>
+            For Samsung phones, dial *#9900* and enter the OTP to access secret functions like packet capture!
+        </p>
+        <p>아래 입력창에 OTP를 생성할 5자리 키를 입력하세요.</p>
+        <input type="text" id="inputKey" maxlength="5" placeholder="5자리 키 입력 (예: sekim)">
+        <button onclick="generateOTP()">OTP 생성</button>
+        <p id="otpOutput">생성된 OTP: </p>
+    </div>
+
+    <div id="messageBox" class="messageBox">
+        생성이 완료되었습니다!
+    </div>
+
+    <script>
+        function int32(n) {
+            return n | 0;
+        }
+
+        function GetDateString(min) {
+            const cal = new Date();
+            cal.setUTCMinutes(cal.getUTCMinutes() - min);
+
+            const year = (cal.getUTCFullYear() - 2000).toString().padStart(2, '0');
+            const month = (cal.getUTCMonth() + 1).toString().padStart(2, '0');
+            const date = cal.getUTCDate().toString().padStart(2, '0');
+            const hour = cal.getUTCHours().toString().padStart(2, '0');
+            const minute = cal.getUTCMinutes().toString().padStart(2, '0');
+
+            return year + month + minute + date + hour;
+        }
+
+        function MakeHashCode(arg) {
+            let nHashValue = 0;
+            for (let i = 0; i < arg.length; i++) {
+                nHashValue = int32((nHashValue << 5) + nHashValue + arg.charCodeAt(i));
+            }
+            if (nHashValue < 0) {
+                return nHashValue * -1;
+            }
+            return nHashValue;
+        }
+
+        function showCompletionMessage() {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.classList.add('show');
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        function generateOTP() {
+            const inputKey = document.getElementById("inputKey").value;
+
+            if (!inputKey || inputKey.length !== 5) {
+                document.getElementById("otpOutput").innerText = `생성된 OTP: 키는 5자리여야 합니다.`;
+                document.getElementById("otpOutput").style.display = 'block';
+                return;
+            }
+
+            const dateString = GetDateString(0);
+            const combinedString = inputKey + dateString;
+            const otpValue = MakeHashCode(combinedString);
+            
+            document.getElementById("otpOutput").innerText = `생성된 OTP: ${otpValue}`;
+            document.getElementById("otpOutput").style.display = 'block';
+            showCompletionMessage();
+        }
+
+        window.onload = () => {
+            document.getElementById("otpOutput").style.display = 'none';
+        };
+    </script>
+</body>
+</html> 
