@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureKim's OTP</title>
+    <title>OTP de SecureKim</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -100,46 +100,89 @@
     <div class="container">
         <h1><a href="https://blog.securekim.com" target="_blank">SecureKim</a>'s OTP</h1>
         <p class="info-text">
-            삼성 폰 키패드에 *#9900*을 입력하고, OTP를 입력해 패킷 캡쳐 같은 비밀 기능을 사용하세요!<br><br>
+            Para teléfonos Samsung, marca *#9900* e ingresa el OTP para acceder a funciones secretas como captura de paquetes!<br><br>
             For Samsung phones, dial *#9900* and enter the OTP to access secret functions like packet capture!
         </p>
-        <p>아래 입력창에 OTP를 생성할 5자리 키를 입력하세요.</p>
-        <input type="text" id="inputKey" maxlength="5" placeholder="5자리 키 입력 (예: sekim)">
-        <button onclick="generateOTP()">OTP 생성</button>
-        <p id="otpOutput">생성된 OTP: </p>
+        <p>Ingresa una clave de 8 dígitos en el campo de abajo para generar el OTP.</p>
+        <input type="text" id="inputKey" maxlength="8" placeholder="Clave de 8 dígitos (ej: 01261302)">
+        <button onclick="generateOTP()">Generar OTP</button>
+        <p id="otpOutput">OTP generado: </p>
     </div>
 
     <div id="messageBox" class="messageBox">
-        생성이 완료되었습니다!
+        ¡Generación completada!
     </div>
 
     <script>
-        function int32(n) {
-            return n | 0;
+        // Constants from the Python implementation
+        const SECRET_HEX = "120395F099840593405B03838449A72933484040A3034750C0403938290A293B";
+        const INTERVAL = 300; // 5 minutes
+        const CODE_DIGITS = 6;
+
+        // HMAC-SHA256 implementation for browsers
+        async function hmacSHA256(key, message) {
+            const keyBuffer = typeof key === 'string' ? hexToBytes(key) : key;
+            const messageBuffer = typeof message === 'string' ? hexToBytes(message) : message;
+            
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyBuffer,
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            
+            const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
+            return new Uint8Array(signature);
         }
 
-        function GetDateString(min) {
-            const cal = new Date();
-            cal.setUTCMinutes(cal.getUTCMinutes() - min);
-
-            const year = (cal.getUTCFullYear() - 2000).toString().padStart(2, '0');
-            const month = (cal.getUTCMonth() + 1).toString().padStart(2, '0');
-            const date = cal.getUTCDate().toString().padStart(2, '0');
-            const hour = cal.getUTCHours().toString().padStart(2, '0');
-            const minute = cal.getUTCMinutes().toString().padStart(2, '0');
-
-            return year + month + minute + date + hour;
+        function hexToBytes(hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return bytes;
         }
 
-        function MakeHashCode(arg) {
-            let nHashValue = 0;
-            for (let i = 0; i < arg.length; i++) {
-                nHashValue = int32((nHashValue << 5) + nHashValue + arg.charCodeAt(i));
+        function isNumeric(str) {
+            return /^\d+$/.test(str);
+        }
+
+        async function generateTOTPNonce(counterHex, nonce) {
+            let inputStr;
+            
+            // Build input string - following Python logic
+            if (isNumeric(nonce) && nonce.length === 6) {
+                inputStr = (nonce + counterHex).padStart(22, '0');
+            } else {
+                console.log("wrong nonce error");
+                inputStr = counterHex.padStart(16, '0');
             }
-            if (nHashValue < 0) {
-                return nHashValue * -1;
-            }
-            return nHashValue;
+
+            const hmacHash = await hmacSHA256(SECRET_HEX, inputStr);
+            const offset = hmacHash[hmacHash.length - 1] & 0x0F;
+
+            const code = (
+                ((hmacHash[offset] & 0x7F) << 24) |
+                ((hmacHash[offset + 1] & 0xFF) << 16) |
+                ((hmacHash[offset + 2] & 0xFF) << 8) |
+                (hmacHash[offset + 3] & 0xFF)
+            ) % Math.pow(10, CODE_DIGITS);
+
+            return code.toString().padStart(CODE_DIGITS, '0');
+        }
+
+        async function genOTP6DigitNonce(inputStr) {
+            const nonce = inputStr ? inputStr.substring(2) : "";
+            const currentTime = Math.floor(Date.now() / 1000);
+            console.log(`The current UTC time is ${currentTime}`);
+            
+            const counter = Math.floor(currentTime / INTERVAL);
+            const counterHex = counter.toString(16).toUpperCase().padStart(16, '0');
+
+            const otp = await generateTOTPNonce(counterHex, nonce);
+            console.log(`final OTP: ${otp}`);
+            return otp;
         }
 
         function showCompletionMessage() {
@@ -151,22 +194,31 @@
             }, 3000);
         }
 
-        function generateOTP() {
+        async function generateOTP() {
             const inputKey = document.getElementById("inputKey").value;
 
-            if (!inputKey || inputKey.length !== 5) {
-                document.getElementById("otpOutput").innerText = `생성된 OTP: 키는 5자리여야 합니다.`;
+            if (!inputKey || inputKey.length !== 8) {
+                document.getElementById("otpOutput").innerText = `OTP generado: La clave debe tener exactamente 8 dígitos.`;
                 document.getElementById("otpOutput").style.display = 'block';
                 return;
             }
 
-            const dateString = GetDateString(0);
-            const combinedString = inputKey + dateString;
-            const otpValue = MakeHashCode(combinedString);
-            
-            document.getElementById("otpOutput").innerText = `생성된 OTP: ${otpValue}`;
-            document.getElementById("otpOutput").style.display = 'block';
-            showCompletionMessage();
+            if (!isNumeric(inputKey)) {
+                document.getElementById("otpOutput").innerText = `OTP generado: La clave debe contener solo números.`;
+                document.getElementById("otpOutput").style.display = 'block';
+                return;
+            }
+
+            try {
+                const otpValue = await genOTP6DigitNonce(inputKey);
+                document.getElementById("otpOutput").innerText = `OTP generado: ${otpValue}`;
+                document.getElementById("otpOutput").style.display = 'block';
+                showCompletionMessage();
+            } catch (error) {
+                console.error('Error generating OTP:', error);
+                document.getElementById("otpOutput").innerText = `OTP generado: Error al generar el OTP.`;
+                document.getElementById("otpOutput").style.display = 'block';
+            }
         }
 
         window.onload = () => {
