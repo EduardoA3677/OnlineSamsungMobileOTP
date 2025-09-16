@@ -3,38 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP de SecureKim</title>
+    <title>Samsung OTP Generator</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background-color: #f4f4f4;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             flex-direction: column;
             text-align: center;
             position: relative;
+            box-sizing: border-box;
         }
         .container {
             background-color: white;
-            padding: 2em;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
+            padding: 2.5em;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 420px;
+            min-width: 280px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         h1 {
-            color: #333;
-            margin-bottom: 5px;
-        }
-        h1 a {
-            color: #007bff;
-            text-decoration: underline;
-        }
-        h1 a:hover {
-            color: #0056b3;
+            color: #1a365d;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 1.8em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .info-text {
             font-size: 0.8em;
@@ -44,35 +45,75 @@
             word-break: keep-all;
         }
         input[type="text"] {
-            padding: 0.5em;
-            font-size: 1em;
-            margin-bottom: 1em;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: calc(100% - 1em);
+            padding: 1em;
+            font-size: 1.1em;
+            margin-bottom: 1.5em;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            width: 100%;
             box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
         button {
-            padding: 0.7em 1.5em;
-            font-size: 1em;
+            padding: 1em 2em;
+            font-size: 1.1em;
+            font-weight: 600;
             color: white;
-            background-color: #007bff;
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
             border: none;
-            border-radius: 4px;
+            border-radius: 12px;
             cursor: pointer;
             width: 100%;
             box-sizing: border-box;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 1em;
         }
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
         }
         #otpOutput {
             margin-top: 1.5em;
-            font-size: 1.5em;
+            font-size: 1.8em;
             font-weight: bold;
-            color: #28a745;
+            color: #2d3748;
             word-break: break-all;
             display: none;
+            background: linear-gradient(135deg, #e6fffa 0%, #f0fff4 100%);
+            padding: 1em;
+            border-radius: 12px;
+            border: 2px solid #38b2ac;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #38b2ac;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            width: auto;
+            margin: 0;
+        }
+        .copy-button:hover {
+            background: #319795;
+            transform: none;
+            box-shadow: none;
         }
         .messageBox {
             position: fixed;
@@ -94,11 +135,36 @@
             pointer-events: auto;
             transform: translateY(0);
         }
+        
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 1.5em;
+                margin: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            input[type="text"] {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            #otpOutput {
+                font-size: 1.5em;
+            }
+        }
+        
+        /* Samsung blue accent */
+        .samsung-accent {
+            color: #1428a0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><a href="https://blog.securekim.com" target="_blank">SecureKim</a>'s OTP</h1>
+        <h1><span class="samsung-accent">Samsung</span> OTP Generator</h1>
         <p class="info-text">
             Para teléfonos Samsung, marca *#9900* e ingresa el OTP para acceder a funciones secretas como captura de paquetes!<br><br>
             For Samsung phones, dial *#9900* and enter the OTP to access secret functions like packet capture!
@@ -106,7 +172,10 @@
         <p>Ingresa una clave de 8 dígitos en el campo de abajo para generar el OTP.</p>
         <input type="text" id="inputKey" maxlength="8" placeholder="Clave de 8 dígitos (ej: 01261302)">
         <button onclick="generateOTP()">Generar OTP</button>
-        <p id="otpOutput">OTP generado: </p>
+        <div id="otpOutput">
+            <button class="copy-button" onclick="copyToClipboard()" style="display: none;">Copiar</button>
+            <span id="otpText">OTP generado: </span>
+        </div>
     </div>
 
     <div id="messageBox" class="messageBox">
@@ -187,6 +256,7 @@
 
         function showCompletionMessage() {
             const messageBox = document.getElementById('messageBox');
+            messageBox.innerText = '¡OTP copiado al portapapeles!';
             messageBox.classList.add('show');
 
             setTimeout(() => {
@@ -194,35 +264,69 @@
             }, 3000);
         }
 
+        async function copyToClipboard() {
+            const otpText = document.getElementById('otpText').innerText;
+            const otpValue = otpText.replace('OTP generado: ', '');
+            
+            try {
+                await navigator.clipboard.writeText(otpValue);
+                showCompletionMessage();
+            } catch (err) {
+                console.error('Error copying to clipboard:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = otpValue;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCompletionMessage();
+            }
+        }
+
         async function generateOTP() {
             const inputKey = document.getElementById("inputKey").value;
 
             if (!inputKey || inputKey.length !== 8) {
-                document.getElementById("otpOutput").innerText = `OTP generado: La clave debe tener exactamente 8 dígitos.`;
+                document.getElementById("otpText").innerText = `OTP generado: La clave debe tener exactamente 8 dígitos.`;
                 document.getElementById("otpOutput").style.display = 'block';
+                document.querySelector(".copy-button").style.display = 'none';
                 return;
             }
 
             if (!isNumeric(inputKey)) {
-                document.getElementById("otpOutput").innerText = `OTP generado: La clave debe contener solo números.`;
+                document.getElementById("otpText").innerText = `OTP generado: La clave debe contener solo números.`;
                 document.getElementById("otpOutput").style.display = 'block';
+                document.querySelector(".copy-button").style.display = 'none';
                 return;
             }
 
             try {
                 const otpValue = await genOTP6DigitNonce(inputKey);
-                document.getElementById("otpOutput").innerText = `OTP generado: ${otpValue}`;
+                document.getElementById("otpText").innerText = `OTP generado: ${otpValue}`;
                 document.getElementById("otpOutput").style.display = 'block';
-                showCompletionMessage();
+                document.querySelector(".copy-button").style.display = 'block';
+                
+                // Automatically copy to clipboard
+                await copyToClipboard();
+                
             } catch (error) {
                 console.error('Error generating OTP:', error);
-                document.getElementById("otpOutput").innerText = `OTP generado: Error al generar el OTP.`;
+                document.getElementById("otpText").innerText = `OTP generado: Error al generar el OTP.`;
                 document.getElementById("otpOutput").style.display = 'block';
+                document.querySelector(".copy-button").style.display = 'none';
             }
         }
 
         window.onload = () => {
             document.getElementById("otpOutput").style.display = 'none';
+            
+            // Add Enter key support
+            document.getElementById("inputKey").addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    generateOTP();
+                }
+            });
         };
     </script>
 </body>
